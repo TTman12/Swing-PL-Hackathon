@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .
-      - name: Generate a full season and check it against the real one
+      - name: Generate a full season and check it against real matches
         run: swing-realism --matches 380 --out realism.md
       - if: always()
         uses: actions/upload-artifact@v4
