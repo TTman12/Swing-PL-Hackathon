@@ -41,8 +41,8 @@ The first version of the Explainer named the tactical change behind every sponta
 
 - **Most swings are not tactical.** About 70% of spontaneous shifts have no change of plan behind them at all. The rest is the ordinary ebb and flow that also drives real matches.
 - **A real tweak is subtle over a few minutes.** Even when a manager did change the plan, the effect on the matching stat over the next 10 minutes was usually inside the noise. Long balls and pass length were the clearest signals, and even they were not reliable.
-- **The generator is not the reason.** We checked it against the real season in two ways:
-  - Team styles spread as widely as real ones. Across the 20 teams, the spread of defending height, PPDA, long-ball share and pass length is at least as wide as in 2017-18.
+- **The generator is not the reason.** We checked it against real matches in two ways:
+  - Team styles spread as widely as real ones. Across the 20 teams, the spread of defending height, PPDA, long-ball share and pass length is at least as wide as in real matches.
   - Red cards reshape the 10-man team as often as in reality. In the 15 minutes after a red card, generated 10-man teams defend lower in 71% of cases (real: 73%), make fewer passes in 94% (real: 86%) and have less final-third play in 82% (real: 86%).
 - **Territory drags other stats with it.** When a team pins the other back, its defending height, crosses and high turnovers rise with the territory, not because anyone asked. `calibrate.py` learns from unlabelled matches how much each stat moves with field tilt alone, so that only the remainder counts as a change of style.
 
