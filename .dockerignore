@@ -1,3 +1,4 @@
+# Only what the live site needs goes into the container image.
 *
 !web/
 !swing/

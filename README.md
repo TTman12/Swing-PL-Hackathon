@@ -4,9 +4,9 @@
 
 Swing is a team of AI agents that watches every club and player statistic in a football match, minute by minute. When momentum swings, it works out where the change came from (a substitute out-running the player he replaced, a side dropping deeper after a red card, a team chasing the game) and puts the answer on screen as a broadcast graphic: one or two numbers, a momentum bar and one plain-English sentence on why it happened, told from your side of the game (your club, or neutral if you don't have one) and in your language. Every number is computed by code and checked again before it airs, so the models choose and explain but can never make a number up.
 
-All match data is synthetic and every club and player is fictional. Built for the Microsoft × Premier League hackathon.
+All match data is synthetic and every club and player is fictional.
 
-**Try it live:** <https://matchlens-live.blacktree-62621304.eastus2.azurecontainerapps.io> (fan screen). Add `?mode=admin` for the operator screen, where **Generate match** makes a brand-new match and plays it through the agents on Microsoft Foundry while you watch.
+**Try it live:** <https://matchlens-live.blacktree-62621304.eastus2.azurecontainerapps.io> It opens on the fan screen. Click **Admin view** for the operator screen, where **Generate match** makes a brand-new match and plays it through the agents on Microsoft Foundry while you watch.
 
 ![The broadcast screen: a card on a substitute's running, the momentum bar and the club stats](docs/img/broadcast.png)
 
@@ -15,18 +15,19 @@ All match data is synthetic and every club and player is fictional. Built for th
 - [The problem](#the-problem)
 - [The five stages](#the-five-stages)
 - [Architecture and the agents' chain of command](#architecture-and-the-agents-chain-of-command)
+- [The on-screen rules, in plain words](#the-on-screen-rules-in-plain-words)
 - [What a viewer sees](#what-a-viewer-sees)
 - [Follow a player](#follow-a-player)
 - [Built on Microsoft](#built-on-microsoft)
-- [Run it locally (offline, no Azure)](#run-it-locally-offline-no-azure)
 - [Proof it works](#proof-it-works)
 - [Synthetic data](#synthetic-data)
 - [Honest limits](#honest-limits)
+- [What's next](#whats-next)
 - [Docs](#docs)
 
 ## The problem
 
-A broadcast shows possession and shots, and anyone watching can tell which side is on top. What nobody shows is *why* the game turned. Real matches swing about five or six times, and about 30% of those swings follow no goal, card or substitution at all (measured on a full real season, [docs/research](docs/research/real-momentum-patterns.md)). Explaining them needs every stat watched at once, compared against the match so far, and turned into something a fan can read in two seconds while the ball is in play. That is too much for a person on a live feed, and a single chatbot invents numbers. Swing splits the job between specialist agents, with code in charge of every number and of what reaches the screen.
+A broadcast shows possession and shots, and anyone watching can tell which side is on top. What nobody shows is *why* the game turned. Real matches swing about five or six times, and in roughly 30% of swings there was no goal, card or substitution in the 15 minutes before ([what real matches show](docs/research/real-momentum-patterns.md)). Explaining them needs every stat watched at once, compared against the match so far, and turned into something a fan can read in two seconds while the ball is in play. That is too much for a person on a live feed, and a single chatbot invents numbers. Swing splits the job between specialist agents, with code in charge of every number and of what reaches the screen.
 
 ## The five stages
 
@@ -55,7 +56,7 @@ The brief asks for one pipeline with five stages. This is where each one lives.
 | **Match-events analyst** | Foundry agent + tool | Goals, red cards and game state: a side chasing the game, a ten-man reshape. |
 | **Explainer** | Foundry agent | Reads the shared board and picks a cause from those the evidence allows, plus one or two finding ids. Tests its draft with a `check_card` tool. |
 | **Verifier** | code | Re-runs the specialists on the tables and compares every number, then enforces the screen rules. A rejected draft goes back once; a second miss falls back to the rules' card. |
-| **Director** | code | The match's editor. It sees every card the agents produce (about 12 a match) and puts up only a few (about 5 or 6): at least 10 minutes apart, at most 4 a half, never before 15', and never one with a confidence below 45%. A goal or red card can break the 10-minute gap. It decides as each card arrives and never waits for a better one, so it behaves the same live as on a replay. |
+| **Director** | code | The match's editor. It sees every card the agents produce (about 12 a match) and puts up only the best-timed few (about 5 or 6), by the rules in the next section. |
 | **Interpreter** | Foundry agent | One sentence per card on what the numbers mean for the game: one for a neutral and one for each club's fans (three in all). It is written once and every viewer sees the version for their side, so the model cost doesn't grow with the audience. No numbers, nothing the data can't see. |
 | **Analyst** | Foundry agent | The "Swing analysis" card: what each club could do about it, picked from 18 levers that a stat in the match backs. |
 | **Recapper** | Foundry agent | The full-time headline, once for a neutral and once for each club, from the result and how the match went. |
@@ -67,12 +68,27 @@ The brief asks for one pipeline with five stages. This is where each one lives.
 
 More: [docs/agents.md](docs/agents.md) (the crew, the board, scores against the hidden truth) and [docs/explainer.md](docs/explainer.md) (the Watcher, the specialists and what stats can and can't tell you).
 
+## The on-screen rules, in plain words
+
+A viewer is watching the football, not reading. So the Director, Swing's editor, follows six simple rules about what goes on screen and when.
+
+| Rule | What it means | Why it's there |
+| --- | --- | --- |
+| **Show a number** | A card must carry at least one stat that changed clearly. | Swing is a graphic, not a paragraph. With no number to show, there is nothing worth interrupting the match for. |
+| **Be sure enough (45% or more)** | Every card carries a confidence: how strongly the evidence backs its cause. A card under 45% is dropped. | Normal cards score about 47% or higher. The floor only catches cards made on thin evidence, for example when an analyst agent failed, so a weak explanation never airs. |
+| **10 minutes apart** | After a card, the next one waits at least 10 minutes. A goal or red card can still break in. | Cards should land in the quiet spells, not pile up on top of each other. |
+| **At most 4 a half** | No more than four cards per half, about 5 or 6 a match out of roughly 12 the agents produce. | Fewer cards means each one is worth reading. |
+| **Nothing before 15'** | Swing explains nothing in the first quarter of an hour. Goals and cards still go on the timeline. | Until then there isn't enough of the match to know what "normal" looks like for either side. |
+| **Decide on the spot** | Each card is accepted or dropped the moment it arrives; the Director never waits to see if a better one comes. | It works the same on a live feed as on a replay, with no hindsight. |
+
+**What "Rules-written" means.** Behind the agents sits a fixed, hand-written rulebook in code that can do each agent's job in a simpler way. If an agent fails, Foundry is slow (over 45 s on a moment) or a draft fails its checks twice, the rulebook steps in and the card says **Rules-written**, so a viewer always knows when a card did not come from the agents. The screen never goes blank.
+
 ## What a viewer sees
 
 | | |
 | --- | --- |
 | ![The fan screen: club crests and the squad on a pitch](docs/img/user-screen.png) | ![The admin screen: stats, the agents and Generate match](docs/img/admin-screen.png) |
-| **Fan screen.** Pick your club from its crest and your player from the squad laid out on a pitch. Video-player controls along the bottom. | **Admin screen** (`?mode=admin`). Club and player stats, what each agent did for the card on screen, the match list and Generate match. |
+| **Fan screen.** Pick your club from its crest and your player from the squad laid out on a pitch. Video-player controls along the bottom. | **Admin screen** (click **Admin view**). Club and player stats, what each agent did for the card on screen, the match list and Generate match. |
 | ![A card expanded into the analyst's table](docs/img/expanded.png) | ![The Swing analysis card](docs/img/analysis.png) |
 | **Cards that expand.** A card starts simple: the anchor ("Since Dunmoor goal 25'" or "Last 7 minutes"), one line, one big number. Expand opens the cause, momentum before and now, and four stats for both clubs. | **Swing analysis.** After a card: "How Dunmoor win it back", or how the side on top keeps it going. Your club's, if you have one. |
 | ![A goal notification](docs/img/note-goal.png) | ![Generate match at full time](docs/img/generate-match-ft.png) |
@@ -118,48 +134,13 @@ Every service below is used by the live product or by the pipeline that builds a
 The code can also send the Spanish lines through **Azure AI Translator** (`swing/agents/translator.py`, `--translator azure`), but the live site and the demo matches use the Translator agent, so it isn't listed above.
 <!-- END: Built on Microsoft -->
 
-## Run it locally (offline, no Azure)
-
-Python 3.11 or later. Everything below runs with no Azure account and no network: the same crew runs on deterministic rules in place of the models.
-
-```
-pip install -e ".[dev]"
-
-(cd web && python3 -m http.server 8000)                # the screen with its six prebuilt matches: http://localhost:8000
-
-swing-gen match --home ash --away brk --seed 7     # one fictional match: events, minute tables, hidden truth
-swing-explain out/matches/ash-brk-7                # the cards that would go on screen, in the terminal
-
-cp -r web out/site                                     # a copy of the screen for your own matches
-swing-broadcast --demo 6 --out out/site/data       # six fresh matches explained by the rules
-(cd out/site && python3 -m http.server 8001)           # http://localhost:8001 (add ?mode=admin)
-```
-
-Generate match and the live feed, still offline:
-
-```
-swing-live --web web --agents offline              # the site plus Generate match, at http://localhost:8000
-swing-feed unseen                                  # the unseen-match test (below)
-pytest -q                                              # 90 tests
-```
-
-With Microsoft Foundry (`pip install -e ".[foundry]"`, `az login`, and `AZURE_AI_PROJECT_ENDPOINT` set to your project):
-
-```
-swing-agents out/matches/ash-brk-7 --runner foundry           # the cards, with each agent's reasoning
-swing-broadcast --demo 6 --out web/data --agents foundry      # bundles explained by the agents
-swing-live --web web                                          # Generate match on the agents
-```
-
-The whole Azure setup is Bicep in `infra/` (`azd provision` stands it up from nothing). See [docs/agents.md](docs/agents.md) and [docs/generate-match.md](docs/generate-match.md).
-
 ## Proof it works
 
 Because the generator records *why* each match went the way it did (hidden from the agents), the explanations can be scored against the truth, not just eyeballed.
 
 | Check | Result | Where |
 | --- | --- | --- |
-| **Realism gate:** a generated season against a real season (public research data, see [Synthetic data](#synthetic-data)) | 31 of 31 numbers within tolerance (passes, shots, goals, cards, subs, shifts per match, the share of shifts with no trigger, the substitute boost, the late-game dip ...) | [docs/realism.md](docs/realism.md), CI job `realism` |
+| **Realism gate:** 380 generated matches against real-match benchmarks (see [Synthetic data](#synthetic-data)) | 31 of 31 numbers within tolerance (passes, shots, goals, cards, subs, shifts per match, the share of shifts with no trigger, the substitute boost, the late-game dip ...) | [docs/realism.md](docs/realism.md), CI job `realism` |
 | **Shifts that match a real swing** in the hidden state | 82% (random windows: 69%), on 380 unseen matches | [docs/explainer.md](docs/explainer.md), CI job `explainer` |
 | **Cause claims that are right** | 73% of 533 checked claims (rules); 70% for the agents on Foundry on 30 unseen matches, about 5 cents a match | [docs/agents.md](docs/agents.md) |
 | **Unseen-match test:** fresh seeds and pairings, sent only as a provider's renamed per-minute feed | Tables rebuilt exactly 30/30; 295 of 295 on-screen numbers recompute; live run identical to the one-go run 30/30 | [docs/live-feed.md](docs/live-feed.md), CI job `unseen` |
@@ -170,7 +151,7 @@ CI runs ruff, strict mypy, the tests, the realism gate, the explainer score and 
 ## Synthetic data
 
 - **Every match on screen is generated; no real match data is shipped.** The clubs and their squads are fictional (`data/league.json`), the crests are drawn by the page from each club's colours, and no league or club marks appear.
-- **How it stays realistic.** To make generated matches behave like real football, `research/learn_priors.py` read one public research dataset once: the Wyscout event data for the 2017-18 Premier League season, published openly by Pappalardo et al. (2019, *Scientific Data* 6:236, [figshare](https://doi.org/10.6084/m9.figshare.c.4415000)) under CC BY 4.0, which allows reuse with credit. It kept only aggregate probability tables (`swing/gen/priors.json.gz`): which action follows which by pitch zone, pass lengths and success, timing, an xG model, card and substitution rates. No real match, club, player or event is stored, and the raw data is never committed or shipped. The same season gives the realism gate its targets (averages such as passes per team and shifts per match, `swing/realism/targets.json`) and the momentum findings in [docs/research](docs/research/real-momentum-patterns.md).
+- **How it stays realistic.** To make generated matches behave like real football, `research/learn_priors.py` read one public research dataset once: the Wyscout open event dataset, published by Pappalardo et al. (2019, *Scientific Data* 6:236, [figshare](https://doi.org/10.6084/m9.figshare.c.4415000)) under CC BY 4.0, which allows reuse with credit. It kept only aggregate probability tables (`swing/gen/priors.json.gz`): which action follows which by pitch zone, pass lengths and success, timing, an xG model, card and substitution rates. No real match, club, player or event is stored, and the raw data is never committed or shipped. The same data gives the realism gate its targets (averages such as passes per team and shifts per match, `swing/realism/targets.json`) and the momentum findings in [docs/research](docs/research/real-momentum-patterns.md).
 - **How it's generated.** The engine plays a match action by action from those tables, steered by each team's plan (block height, pressing, directness and more), player quality, fatigue and a drifting ebb and flow. A coaching layer changes plans after some events and sometimes for no reason, and logs every decision as hidden truth. Momentum is never written directly: it comes out of the stats. See [docs/generator.md](docs/generator.md).
 - **Distance and sprints are modelled**, and marked so on screen.
 - **Any match in the format works.** The format is published in [docs/data-format.md](docs/data-format.md), and the feed adapter takes another provider's column names ([docs/live-feed.md](docs/live-feed.md)).
@@ -184,6 +165,20 @@ CI runs ruff, strict mypy, the tests, the realism gate, the explainer score and 
 - **Not built:** auto-eventing from video, ball and shot speed, and a pass difficulty rating. The stadium is a still photo with no marks, standing in for the match video.
 - **Two languages so far:** English and Spanish. A third would need the Translator's check and the rules' fallback lines written for that language.
 
+## What's next
+
+Swing is groundwork. The hard part is in place: a crew of agents that watches every stat, finds where a swing came from, keeps every number honest and gets a graphic on screen while the ball is still in play. What it knows about football today comes from synthetic matches and simple statistics. Give the same structure real match data and proper statistical modelling, and the insight it can offer grows a long way.
+
+- **Real data feeds.** Plug the feed adapter into a provider's live event and tracking data. With player positions, the agents could talk about shape, compactness, pressing traps and off-ball runs, not just what happened on the ball.
+- **Agents grounded in real football.** Ground the specialists in years of real matches, so a claim like "this press usually breaks within ten minutes" comes from evidence, and the Analyst's advice is backed by what actually worked for sides in the same spot.
+- **Calibrated momentum models.** Replace today's rules of thumb with models trained and tested on real matches: a proper win-probability model, an expected-threat model of every action, and confidence scores calibrated so 70% really means right 7 times in 10.
+- **Baselines per league and per team.** Compare a side against its own season and its league's style, so "deep for them" means something different for a possession side and a counter-attacking one.
+- **Player-level insight.** Scouting-grade player models: who is tiring, who is being targeted, which matchups are deciding the game, and a running "player of the swing".
+- **Broadcaster integration.** Send the timed JSON cues straight into a broadcaster's graphics engine as live overlays, with a producer console to approve, hold or re-time cards.
+- **A coach and analyst workbench.** The same crew on a club's own data: half-time briefings, opponent reports and a searchable log of every swing and its cause.
+- **Personalisation that learns.** Learn what each fan opens, expands and follows, and tune how often cards appear, how deep they go and which players they lead with.
+- **More languages and voices.** More languages through the Translator, and an optional spoken line for audio and second-screen apps.
+
 ## Docs
 
 - [docs/design.md](docs/design.md): the design and the decisions behind it.
@@ -194,7 +189,7 @@ CI runs ruff, strict mypy, the tests, the realism gate, the explainer score and 
 - [docs/generate-match.md](docs/generate-match.md): Generate match on the live site.
 - [docs/generator.md](docs/generator.md) and [docs/realism.md](docs/realism.md): the synthetic match generator and its realism gate.
 - [docs/data-format.md](docs/data-format.md): the match format.
-- [docs/research/](docs/research/): which football stats exist and what each reveals, and what 380 real matches show about momentum.
+- [docs/research/](docs/research/): which football stats explain the game, and what real matches show about momentum.
 
 ## Licence
 

@@ -1,4 +1,4 @@
-# Swing live site: the broadcast screen with its prebuilt match bundles, plus "Generate match",
+# The Swing live site: the broadcast screen with its prebuilt match bundles, plus "Generate match",
 # which generates a brand-new match and plays it through the agents on Microsoft Foundry one minute
 # at a time (swing/live). The app signs in to Foundry with its managed identity.
 FROM mcr.microsoft.com/azurelinux/base/python:3.12

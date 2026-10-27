@@ -1,6 +1,6 @@
 # Realism gate
 
-Generated 380 matches (seed 2026) in 60 s and measured them with the same code as the real Premier League 2017-18 season (Wyscout public data, CC BY 4.0). A number passes when it is within the tolerance of the real value. Regenerate with `swing-realism`.
+Generated 380 matches (seed 2026) in 60 s and measured them with the same code as the real matches in the Wyscout open dataset (Pappalardo et al. 2019, CC BY 4.0). A number passes when it is within the tolerance of the real value. Regenerate with `swing-realism`.
 
 **31 of 31 gated numbers pass — all pass.**
 

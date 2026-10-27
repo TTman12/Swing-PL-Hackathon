@@ -1,12 +1,12 @@
 # Swing: Momentum Explainer design
 
-Status: written as a draft on 20 Oct 2026 before anything was built, and brought up to date on 21 Oct 2026. Everything below is now built. Sections 1 to 4 and 7 are the design as agreed; sections 5, 6 and 8 describe what was built where it differs from the draft; section 10 holds Tristan's decisions. For how each part works today, the per-part docs are the reference: [agents.md](agents.md), [explainer.md](explainer.md), [broadcast.md](broadcast.md), [generator.md](generator.md), [live-feed.md](live-feed.md) and [generate-match.md](generate-match.md).
+Everything below is built. Sections 1 to 4 and 7 are the design; sections 5, 6 and 8 describe what was built where it differs from the first draft; section 10 lists the key decisions. For how each part works today, the per-part docs are the reference: [agents.md](agents.md), [explainer.md](explainer.md), [broadcast.md](broadcast.md), [generator.md](generator.md), [live-feed.md](live-feed.md) and [generate-match.md](generate-match.md).
 
-This builds on two earlier files:
+It builds on two research notes:
 - `docs/research/football-stats-for-tactical-inference.md`, for the metric vocabulary;
-- `docs/research/real-momentum-patterns.md`, for what 380 real matches show.
+- `docs/research/real-momentum-patterns.md`, for what real matches show about momentum.
 
-**[Real]** marks a number measured from the 2017-18 Wyscout data. **[Choice]** marks a design decision that is open to change.
+**[Real]** marks a number measured from public real-match event data. **[Choice]** marks a design decision that is open to change.
 
 ## 1. The product in one line
 
@@ -49,13 +49,13 @@ All of it is fictional (we reuse the existing fictional league and clubs) and sy
 
 ## 4. Generator
 
-The principle comes from Tristan: **momentum is never written directly.** Events may cause a change of plan. Plans set how a team plays. Stats come out of play. Momentum comes out of the stats.
+The principle: **momentum is never written directly.** Events may cause a change of plan. Plans set how a team plays. Stats come out of play. Momentum comes out of the stats.
 
 Layers:
 
 1. **Team identity.** Style parameters per club:
    - block height, press intensity, directness, tempo, width, risk, duel aggression, and base quality.
-   - [Choice] Start the archetypes from the spread of real 2017-18 teams, measured from the data (for example possession-heavy, direct, low-block counter), then map them onto our fictional clubs.
+   - [Choice] Start the archetypes from the spread of real teams, measured from the data (for example possession-heavy, direct, low-block counter), then map them onto our fictional clubs.
 2. **Player model.** Each player has:
    - a role, an ability and a stamina curve.
    - Fatigue gradually lowers his duel rate, pressing and physical output. Per-player activity dips at 60 to 75 minutes [Real].
@@ -78,7 +78,7 @@ Layers:
    - Every decision is logged to `truth`.
 5. **Output.** The tables in section 3 are streamed minute by minute for live mode, or written out whole for replay.
 
-**Realism gate.** Before anything else uses the generator, generate 380 fictional matches and compare them with the real season on every number in `docs/research/real-momentum-patterns.md`. That covers:
+**Realism gate.** Before anything else uses the generator, generate 380 fictional matches and compare them with real matches on every number in `docs/research/real-momentum-patterns.md`. That covers:
 - passes, accuracy, shots, goals, cards and subs per match;
 - shifts per match, against the noise floor;
 - the share of shifts with no trigger;
@@ -148,7 +148,6 @@ These sit beside the realism gate as the two headline charts for the judges.
 
 ## 8. What changed from the draft
 
-- **Clean slate.** The old repo (movement simulator, 10 Hz frames, camera and replay, the earlier Match-State MCP server) was wiped on 20 Oct. It stays in git history only.
 - **A new, smaller MCP server.** The agents' tools (investigate, read the board, check a card) are served by the Swing MCP server, in process, with a fallback to direct calls. The same server runs on stdio for outside tools. See [agents.md](agents.md#the-mcp-server).
 - **The Translator translates sentences,** not just labels, because each card now has a line written for the viewer. A check in code compares each translation with the English.
 - **Agents after the card.** The Interpreter, the Analyst and the Recapper were added so the screen can say what a card means, what a club could do about it, and how the match went, each held to the facts by code and screened by Azure AI Content Safety.
@@ -157,32 +156,26 @@ These sit beside the realism gate as the two headline charts for the judges.
 
 ## 9. Open questions (answered)
 
-1. **What sits behind the graphics?** A stadium still (section 10, point 5).
+1. **What sits behind the graphics?** A stadium still (section 10, point 4).
 2. **Physical stats?** Included, modelled and labelled as modelled.
 3. **First graphic styles?** Event, spontaneous and recovery cards, all built.
 4. **Build order?** Generator first, gated on the realism test; all four steps are done.
 
-## 10. Decisions (Tristan, 20 Oct 11:53)
+## 10. Decisions
 
-1. **Clean slate.** Wipe the old repo and start again. Keep only the licence and housekeeping files; everything old stays in git history.
-2. **Any match, not scripted.** A full match file is fed straight in, and the agents work it out on their own for any match.
+1. **Any match, not scripted.** A full match file is fed straight in, and the agents work it out on their own for any match.
    - The agents never see `truth`, and nothing in the agents may know about planted causes.
    - Test on unseen seeds and team styles.
    - Publish the input format so any data that matches it works.
-3. **Baseline for explaining a shift.** Compare stats since the shift began against the team's average over the whole match so far, excluding the shift period itself.
-4. **Settling period.** No shift detection or explanation before 15' (20' until 22 Oct 2026). Events before then still go on the timeline, and an event-mode card for an early event (e.g. a red at 12') waits until there is enough data after it.
-5. **Screen layout:**
+2. **Baseline for explaining a shift.** Compare stats since the shift began against the team's average over the whole match so far, excluding the shift period itself.
+3. **Settling period.** No shift detection or explanation before 15'. Events before then still go on the timeline, and an event-mode card for an early event (e.g. a red at 12') waits until there is enough data after it.
+4. **Screen layout:**
    - A realistic stadium still (a freeze-frame of a match in play) fills the background. Nothing is simulated.
    - A **momentum scale** is always visible.
    - An **event timeline** runs along the bottom (goals, cards, subs, half-time).
    - The **score and clock** stay.
-   - The **cards** pop up broadcast-style, like the PL's possession lower-thirds: event, spontaneous and recovery.
-6. **Distance and sprints:** included, modelled, and labelled as modelled.
-7. **Build order:** generator first, gated on the realism test.
-8. **Look:**
-   - Emulate the Premier League's broadcast and website visual language (colour, type feel, layout, motion) rather than default AI-site styling. No logos.
-   - Open point for the graphics stage: the PL typeface is proprietary, and the rules bar third-party trademarks. Plan to use a close open-licence font and a palette inspired by theirs, not exact brand assets.
-9. **Stadium image:**
-   - Ideally AI-generated with an image model on Azure (this also strengthens the Microsoft story).
-   - It needs a paid image-model deployment, so get Tristan's OK first.
-   - Otherwise, a licence-free stock photo with no club branding.
+   - The **cards** pop up broadcast-style, like a broadcaster's stats lower-thirds: event, spontaneous and recovery.
+5. **Distance and sprints:** included, modelled, and labelled as modelled.
+6. **Build order:** generator first, gated on the realism test.
+7. **Look:** a broadcast visual language (colour, type, layout, motion) rather than default web styling, with open-licence fonts (Barlow) and no league, club or third-party marks.
+8. **Stadium image:** an AI-generated still with no club branding.

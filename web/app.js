@@ -88,6 +88,7 @@
       halves: "First half · second half", involvement: "Touches every 5 minutes", before: "before", since: "since",
       confidence: "confidence", stat_of: (who, label) => `${who}'s ${lower(label)}`, rank_at: (club) => `at ${club}`,
       no_bundle_stats: "This match bundle has no stats tables.", by_rules: "Rules-written",
+      by_rules_tip: "Written by Swing's fixed rulebook in code, because the agents didn't return a checked card in time.",
       // read out by screen readers
       more_detail: "More detail", less_detail: "Less detail", full: "Full screen", exit_full: "Exit full screen",
       speed: (x) => `Speed ${x}x`, language: "Language: English, switch to Spanish", feed: "Match feed", score: "Score",
@@ -115,6 +116,7 @@
       halves: "Primera parte · segunda parte", involvement: "Toques cada 5 minutos", before: "antes", since: "desde",
       confidence: "confianza", stat_of: (who, label) => `${label} de ${who}`, rank_at: (club) => `en ${club}`,
       no_bundle_stats: "Este partido no tiene tablas de estadísticas.", by_rules: "Escrita por reglas",
+      by_rules_tip: "Escrita por las reglas fijas de Swing, porque los agentes no entregaron a tiempo una tarjeta verificada.",
       more_detail: "Más detalle", less_detail: "Menos detalle", full: "Pantalla completa", exit_full: "Salir de pantalla completa",
       speed: (x) => `Velocidad ${x}x`, language: "Idioma: español, cambiar a inglés", feed: "Imagen del partido", score: "Marcador",
       playback: "Reproducción", match: "Partido", stats: "Estadísticas", picker: "Tu club y tu jugador", bottom: "Inercia y cronología",
@@ -859,7 +861,8 @@
   function byLabel(c) {
     const parts = c.by === "rules" ? [w("by_rules")] : [];
     for (const r of c.recovery || []) parts.push(w(r.recovered_by === "retry" ? "retried" : "recovered", agentName(r.agent)));
-    return parts.length ? `<span class="card-by${c.recovery ? " recovered" : ""}">${esc(parts.join(" · "))}</span>` : "";
+    const tip = c.by === "rules" ? ` title="${esc(w("by_rules_tip"))}"` : "";
+    return parts.length ? `<span class="card-by${c.recovery ? " recovered" : ""}"${tip}>${esc(parts.join(" · "))}</span>` : "";
   }
 
   // ---------- under the hood ----------

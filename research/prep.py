@@ -1,4 +1,4 @@
-"""Build per team-minute aggregates from Wyscout England events -> pickle."""
+"""Build per team-minute aggregates from Wyscout events -> pickle."""
 import json, sys, pickle, collections
 d = sys.argv[1]
 ev = json.load(open(f'{d}/events_England.json'))

@@ -1,4 +1,4 @@
-"""Learn the generator's priors from the public Wyscout event data (Premier League 2017-18).
+"""Learn the generator's priors from the public Wyscout event data (Pappalardo et al. 2019).
 
 The output is aggregate probability tables only: transition counts between action types, pass
 displacement histograms, success rates, timing quantiles, role shares, an xG model, card rates and
@@ -259,7 +259,7 @@ def main(src: str, dst: str) -> None:
 
     fk_shots = [r for r in shots]
     priors = {
-        "source": "Wyscout public event data, Premier League 2017-18 (Pappalardo et al. 2019, CC BY 4.0). Aggregates only.",
+        "source": "Wyscout open event data (Pappalardo et al. 2019, CC BY 4.0). Aggregates only.",
         "coords": "0-100 x (own goal to opponent goal) by 0-100 y, acting team's attacking frame",
         "transitions": {k: dict(v) for k, v in trans.items() if sum(v.values()) >= 30},
         "transitions_backoff": {k: dict(v) for k, v in trans_back.items()},

@@ -1,6 +1,6 @@
 # infra
 
-Swing on Azure, as code. Everything runs in one resource group, next to the Microsoft Foundry project.
+Swing on Azure, as code. Everything runs in one resource group, next to the Microsoft Foundry project. The Azure resources keep `matchlens`, the project's working name (the `matchlens-live` app, the `matchlens-foundry-812` account, the `matchlens-ci` principal), so the live deployment and its sign-in stay as they are.
 
 | File | What it does |
 | --- | --- |
