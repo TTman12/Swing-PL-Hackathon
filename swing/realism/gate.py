@@ -1,4 +1,4 @@
-"""The realism gate: generate a season and check every number against the real 2017-18 season.
+"""The realism gate: generate a season and check every number against real matches.
 
 swing-realism                     # 380 matches, writes docs/realism.md, exits 1 on failure
 swing-realism --matches 120       # quicker, looser
@@ -90,8 +90,8 @@ def report(real: dict[str, float], syn: dict[str, float], matches: int, seed: in
         "# Realism gate",
         "",
         f"Generated {matches} matches (seed {seed}) in {seconds:.0f} s and measured them with the same code as the real "
-        "Premier League 2017-18 season (Wyscout public data, CC BY 4.0). A number passes when it is within the tolerance of the "
-        "real value. Regenerate with `swing-realism`.",
+        "matches in the Wyscout open dataset (Pappalardo et al. 2019, CC BY 4.0). A number passes when it is within "
+        "the tolerance of the real value. Regenerate with `swing-realism`.",
         "",
         f"**{passed} of {gated} gated numbers pass{' — all pass' if ok_all else ''}.**",
         "",

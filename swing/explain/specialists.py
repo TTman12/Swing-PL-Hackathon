@@ -5,7 +5,7 @@ it can be shared between agents as-is:
 
     {agent, claim, team, player?, metric, label, unit, before, after, effect_sd, evidence}
 
-`before` is the baseline Tristan chose: the whole match so far, up to the anchor (the shift itself
+`before` is the baseline: the whole match so far, up to the anchor (the shift itself
 is excluded). `after` is from the anchor to now.
 """
 
