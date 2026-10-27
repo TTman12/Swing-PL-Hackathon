@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swing"
-version = "0.2.0"
+version = "1.0.0"
 description = "Explains why momentum shifts in football matches, from minute-by-minute statistics."
 readme = "README.md"
 license = { text = "MIT" }
