@@ -1,3 +1,4 @@
+# Build output, caches and local data stay out of git.
 # Python
 __pycache__/
 *.py[cod]
